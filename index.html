@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N-PUZZLE问题解法演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+        .puzzle-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .controls-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .puzzle-grid {
+            display: grid;
+            gap: 5px;
+            margin: 20px auto;
+            justify-content: center;
+        }
+        .grid-3x3 {
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+        }
+        .grid-4x4 {
+            grid-template-columns: repeat(4, 60px);
+            grid-template-rows: repeat(4, 60px);
+        }
+        .tile {
+            transition: all 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #3498db;
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .empty-tile {
+            background-color: #ecf0f1;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .moving-tile {
+            background-color: #e74c3c;
+            transform: scale(1.05);
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2c3e50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background-color: #3498db;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .speed-control {
+            margin: 20px 0;
+        }
+        .speed-control label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .slider-track {
+            flex: 1;
+            height: 6px;
+            background-color: #ecf0f1;
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .slider-fill {
+            position: absolute;
+            height: 100%;
+            background-color: #3498db;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .slider-thumb {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #2c3e50;
+            border-radius: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: left 0.3s ease, background-color 0.3s;
+            z-index: 2;
+        }
+        .slider-thumb:hover {
+            background-color: #3498db;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .step-info {
+            text-align: center;
+            font-size: 18px;
+            margin: 15px 0;
+        }
+        .puzzle-selector {
+            margin-bottom: 20px;
+        }
+        .puzzle-selector select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #bdc3c7;
+            font-size: 16px;
+        }
+        .move-history {
+            max-height: 420px;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ecf0f1;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .move-history h3 {
+            margin-top: 0;
+        }
+        .move-item {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+            background-color: #ecf0f1;
+        }
+        .current-move {
+            background-color: #3498db;
+            color: white;
+        }
+        .size-selector {
+            margin-bottom: 15px;
+        }
+        .size-selector label {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .size-selector input {
+            margin-right: 5px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+        .status-message {
+            text-align: center;
+            padding: 10px;
+            color: #777;
+            font-style: italic;
+        }
+        .github-link {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+        }
+        .github-link a {
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        .github-link a:hover {
+            color: #3498db;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .modal-btn {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2c3e50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .modal-btn:hover {
+            background-color: #3498db;
+        }
+        .cancel-btn {
+            background-color: #95a5a6;
+        }
+        .cancel-btn:hover {
+            background-color: #7f8c8d;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>N-PUZZLE问题解法演示</h1>
+    <div class="container">
+        <div class="puzzle-section">
+            <div class="puzzle-selector">
+                <select id="puzzle-select">
+                    <option value="0">第一个 3×3 拼图 (21步)</option>
+                    <option value="1">第二个 3×3 拼图 (31步)</option>
+                    <option value="2">第三个 3×3 拼图 (31步)</option>
+                    <option value="3">第一个 4×4 拼图 (52步)</option>
+                    <option value="4">第二个 4×4 拼图 (51步)</option>
+                    <option value="5">第三个 4×4 拼图 (50步)</option>
+                    <option value="random">随机生成拼图</option>
+                </select>
+            </div>
+            
+            <div class="size-selector" id="size-selector" style="display: none;">
+                <label>
+                    <input type="radio" name="size" value="3" checked> 3×3
+                </label>
+                <label>
+                    <input type="radio" name="size" value="4"> 4×4 (可能需要较长时间)
+                </label>
+            </div>
+
+            <div id="puzzle-container">
+                <!-- 拼图网格将通过JavaScript动态生成 -->
+            </div>
+
+            <div class="step-info">
+                <span id="current-step">0</span> / <span id="total-steps">0</span> 步
+            </div>
+
+            <div class="controls">
+                <button id="prev-btn">上一步</button>
+                <button id="play-btn">自动播放</button>
+                <button id="pause-btn">暂停</button>
+                <button id="next-btn">下一步</button>
+                <button id="reset-btn">重置</button>
+            </div>
+
+            <div class="speed-control">
+                <label for="speed-slider">播放速度:</label>
+                <div class="slider-container">
+                    <div class="slider-track" id="slider-track">
+                        <div class="slider-fill" id="slider-fill"></div>
+                        <div class="slider-thumb" id="slider-thumb"></div>
+                    </div>
+                    <span id="speed-value">500ms</span>
+                </div>
+                <input type="range" id="speed-slider" min="100" max="2000" value="500" step="10" style="display: none;">
+            </div>
+
+            <div class="github-link">
+                <p>查看源代码: <a href="#" id="github-link">访问GitHub</a></p>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <h3>移动步骤</h3>
+            <div class="move-history" id="move-history">
+                <!-- 移动历史将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- GitHub访问确认弹窗 -->
+    <div id="githubModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>访问GitHub</h2>
+            <p>您即将访问GitHub页面</p>
+            <p><strong>URL:</strong> <a href="https://github.com/wj866" target="_blank">https://github.com/wj866</a></p>
+            <p>是否确认访问？</p>
+            <button class="modal-btn" id="confirmBtn">确认访问</button>
+            <button class="modal-btn cancel-btn" id="cancelBtn">取消</button>
+        </div>
+    </div>
+
+    <script>
+        // 拼图数据
+        const puzzles = [
+            {
+                name: "第一个 3×3 拼图",
+                size: 3,
+                initialState: [
+                    [5, 0, 8],
+                    [4, 2, 1],
+                    [7, 3, 6]
+                ],
+                moves: ["S", "E", "N", "W", "S", "S", "E", "N", "W", "S", "W", "N", "N", "E", "E", "S", "W", "W", "S", "E", "E"],
+                steps: 21
+            },
+            {
+                name: "第二个 3×3 拼图",
+                size: 3,
+                initialState: [
+                    [6, 4, 7],
+                    [8, 5, 0],
+                    [3, 2, 1]
+                ],
+                moves: ["N","W","S","W","S","E","E","N","W","W","S","E","E","N","W","N","W","S","S","E","N","N","E","S","W","N","W","S","E","S","E"],
+                steps: 31
+            },
+            {
+                name: "第三个 3×3 拼图",
+                size: 3,
+                initialState: [
+                    [8, 6, 7],
+                    [2, 5, 4],
+                    [3, 0, 1]
+                ],
+                moves: ["N","W","S","E","E","N","N","W","S","W","N","E","S","W","S","E","E","N","W","W","S","E","E","N","N","W","W","S","S","E","E"],
+                steps: 31
+            },
+            {
+                name: "第一个 4×4 拼图",
+                size: 4,
+                initialState: [
+                    [8, 13, 0, 6],
+                    [1, 15, 9, 14],
+                    [3, 4, 5, 11],
+                    [7, 2, 10, 12]
+                ],
+                moves: ["W","W","S","E","S","E","N","N","W","S","S","W","N","E","S","S","E","N","N","E","N","W","W","S","S","S","E","N","N","E","N","W","W","S","S","W","S","E","E","N","W","W","S","E","E","N","W","N","E","S","E","S"],
+                steps: 52
+            },
+            {
+                name: "第二个 4×4 拼图",
+                size: 4,
+                initialState: [
+                    [2, 9, 5, 11],
+                    [8, 3, 4, 14],
+                    [7, 10, 1, 12],
+                    [0, 15, 6, 13]
+                ],
+                moves:["E","N","N","N","E","S","W","S","E","N","W","W","S","E","E","S","E","N","N","N","W","S","W","W","S","E","E","E","N","W","W","N","W","S","E","S","S","W","N","E","S","E","N","W","W","S","E","E","N","E","S"],
+                steps: 51
+            },
+            {
+                name: "第三个 4×4 拼图",
+                size: 4,
+                initialState: [
+                    [12, 1, 5, 6],
+                    [2, 11, 7, 9],
+                    [14, 10, 0, 4],
+                    [15, 3, 13, 8]
+                ],
+                moves: ["W", "S", "E", "N", "N", "E", "S", "W", "N", "W", "N", "W", "S", "E", "S", "S", "W", "N", "E", "E", "S", "W", "W", "N", "E", "E", "N", "N", "W", "S", "E", "N", "E", "S", "S", "S", "W", "N", "N", "N", "W", "W", "S", "E", "E", "E", "S", "W", "S", "E"],
+                steps: 50
+            }
+        ];
+
+        // 游戏状态
+        let currentPuzzleIndex = 0;
+        let currentState = [];
+        let currentStep = 0;
+        let emptyPosition = {row: 0, col: 0};
+        let animationInterval = null;
+        let animationSpeed = 500;
+        let isAnimating = false; // 标记是否正在执行动画
+        let randomPuzzleSize = 3; // 默认随机拼图大小
+        let optimalSolution = []; // 存储A*算法计算出的最优解
+        let isCalculating = false; // 标记是否正在计算
+
+        // DOM 元素
+        const puzzleContainer = document.getElementById('puzzle-container');
+        const puzzleSelect = document.getElementById('puzzle-select');
+        const sizeSelector = document.getElementById('size-selector');
+        const currentStepElement = document.getElementById('current-step');
+        const totalStepsElement = document.getElementById('total-steps');
+        const prevBtn = document.getElementById('prev-btn');
+        const playBtn = document.getElementById('play-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValue = document.getElementById('speed-value');
+        const moveHistoryElement = document.getElementById('move-history');
+        const sliderTrack = document.getElementById('slider-track');
+        const sliderFill = document.getElementById('slider-fill');
+        const sliderThumb = document.getElementById('slider-thumb');
+        const githubLink = document.getElementById('github-link');
+        const githubModal = document.getElementById('githubModal');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const spanClose = document.querySelector('.close');
+
+        // 初始化
+        function init() {
+            loadPuzzle(currentPuzzleIndex);
+            updateControls();
+            initCustomSlider();
+
+            // 事件监听器
+            puzzleSelect.addEventListener('change', (e) => {
+                currentPuzzleIndex = e.target.value === 'random' ? -1 : parseInt(e.target.value);
+                
+                if (currentPuzzleIndex === -1) {
+                    sizeSelector.style.display = 'block';
+                    loadRandomPuzzle();
+                } else {
+                    sizeSelector.style.display = 'none';
+                    loadPuzzle(currentPuzzleIndex);
+                }
+                updateControls();
+            });
+
+            // 监听随机拼图大小选择
+            document.querySelectorAll('input[name="size"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    if (puzzleSelect.value === 'random') {
+                        randomPuzzleSize = parseInt(radio.value);
+                        loadRandomPuzzle();
+                    }
+                });
+            });
+
+            prevBtn.addEventListener('click', prevStep);
+            playBtn.addEventListener('click', startAnimation);
+            pauseBtn.addEventListener('click', pauseAnimation);
+            nextBtn.addEventListener('click', nextStep);
+            resetBtn.addEventListener('click', resetPuzzle);
+
+            speedSlider.addEventListener('input', (e) => {
+                animationSpeed = 2100 - e.target.value;
+                speedValue.textContent = `${Math.round(animationSpeed)}ms`;
+                updateCustomSlider();
+                if (animationInterval) {
+                    pauseAnimation();
+                    startAnimation();
+                }
+            });
+
+            // GitHub链接事件
+            githubLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                githubModal.style.display = 'block';
+            });
+
+            // 模态框事件
+            confirmBtn.addEventListener('click', function() {
+                window.open('https://github.com/wj866', '_blank');
+                githubModal.style.display = 'none';
+            });
+
+            cancelBtn.addEventListener('click', function() {
+                githubModal.style.display = 'none';
+            });
+
+            spanClose.addEventListener('click', function() {
+                githubModal.style.display = 'none';
+            });
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                if (event.target === githubModal) {
+                    githubModal.style.display = 'none';
+                }
+            });
+        }
+
+        // 初始化自定义滑块
+        function initCustomSlider() {
+            updateCustomSlider();
+
+            // 滑块拖动事件
+            let isDragging = false;
+
+            sliderThumb.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // 防止拖动时选中文本
+                isDragging = true;
+                document.addEventListener('mousemove', handleSliderMove);
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    document.removeEventListener('mousemove', handleSliderMove);
+                });
+            });
+
+            // 滑块轨道点击事件
+            sliderTrack.addEventListener('click', (e) => {
+                const rect = sliderTrack.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percentage = Math.max(0, Math.min(1, x / rect.width));
+                updateSliderValue(percentage);
+            });
+
+            function handleSliderMove(e) {
+                if (!isDragging) return;
+
+                const rect = sliderTrack.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percentage = Math.max(0, Math.min(1, x / rect.width));
+                updateSliderValue(percentage);
+            }
+
+            function updateSliderValue(percentage) {
+                const value = 100 + Math.round(percentage * 1900);
+                speedSlider.value = value;
+                animationSpeed = 2100 - value;
+                speedValue.textContent = `${Math.round(animationSpeed)}ms`;
+                updateCustomSlider();
+
+                if (animationInterval) {
+                    pauseAnimation();
+                    startAnimation();
+                }
+            }
+        }
+
+        // 更新自定义滑块
+        function updateCustomSlider() {
+            const value = parseInt(speedSlider.value);
+            const percentage = (value - 100) / 1900;
+            sliderFill.style.width = `${percentage * 100}%`;
+            sliderThumb.style.left = `${percentage * 100}%`;
+        }
+
+        // 计算曼哈顿距离
+        function manhattanDistance(state, size) {
+            let distance = 0;
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const value = state[i][j];
+                    if (value !== 0) {
+                        const targetRow = Math.floor((value - 1) / size);
+                        const targetCol = (value - 1) % size;
+                        distance += Math.abs(i - targetRow) + Math.abs(j - targetCol);
+                    }
+                }
+            }
+            return distance;
+        }
+
+        // 将状态转换为字符串，用于哈希表
+        function stateToString(state) {
+            return state.flat().join(',');
+        }
+
+        // 从字符串转换回状态
+        function stringToState(str, size) {
+            const arr = str.split(',').map(Number);
+            const state = [];
+            for (let i = 0; i < size; i++) {
+                state[i] = [];
+                for (let j = 0; j < size; j++) {
+                    state[i][j] = arr[i * size + j];
+                }
+            }
+            return state;
+        }
+
+        // 获取空格位置
+        function getEmptyPosition(state) {
+            for (let i = 0; i < state.length; i++) {
+                for (let j = 0; j < state[i].length; j++) {
+                    if (state[i][j] === 0) {
+                        return { row: i, col: j };
+                    }
+                }
+            }
+            return null;
+        }
+
+        // 生成目标状态
+        function getTargetState(size) {
+            const target = [];
+            for (let i = 0; i < size; i++) {
+                target[i] = [];
+                for (let j = 0; j < size; j++) {
+                    if (i === size - 1 && j === size - 1) {
+                        target[i][j] = 0; // 空格在右下角
+                    } else {
+                        target[i][j] = i * size + j + 1;
+                    }
+                }
+            }
+            return target;
+        }
+
+        // A*算法实现 - 优化版本
+        async function aStar(startState, size) {
+            const targetState = getTargetState(size);
+            const targetStr = stateToString(targetState);
+
+            // 使用优先队列（简单实现）
+            const openSet = [];
+            const closedSet = new Set();
+            
+            // 起始节点
+            const startNode = {
+                state: startState,
+                g: 0, // 从起点到当前节点的实际代价
+                h: manhattanDistance(startState, size), // 启发式函数
+                f: manhattanDistance(startState, size), // f = g + h
+                path: [] // 记录路径
+            };
+            
+            openSet.push(startNode);
+            
+            // 限制搜索步骤，防止搜索时间过长
+            let stepCount = 0;
+            const maxSteps = size === 3 ? 10000 : 5000; // 3x3最多10000步，4x4最多5000步
+            
+            while (openSet.length > 0 && stepCount < maxSteps) {
+                // 按f值排序，选择f值最小的节点
+                openSet.sort((a, b) => a.f - b.f);
+                const current = openSet.shift();
+                
+                const currentStr = stateToString(current.state);
+                
+                // 如果找到目标状态，返回路径
+                if (currentStr === targetStr) {
+                    return current.path;
+                }
+                
+                closedSet.add(currentStr);
+                
+                // 获取空格位置
+                const emptyPos = getEmptyPosition(current.state);
+                
+                // 尝试四个方向的移动
+                const directions = [
+                    { dr: -1, dc: 0, move: 'N' }, // 上
+                    { dr: 1, dc: 0, move: 'S' },  // 下
+                    { dr: 0, dc: -1, move: 'W' }, // 左
+                    { dr: 0, dc: 1, move: 'E' }   // 右
+                ];
+                
+                for (const dir of directions) {
+                    const newRow = emptyPos.row + dir.dr;
+                    const newCol = emptyPos.col + dir.dc;
+                    
+                    // 检查边界
+                    if (newRow >= 0 && newRow < size && newCol >= 0 && newCol < size) {
+                        // 创建新状态
+                        const newState = current.state.map(row => [...row]);
+                        // 交换空格和相邻的方块
+                        newState[emptyPos.row][emptyPos.col] = newState[newRow][newCol];
+                        newState[newRow][newCol] = 0;
+                        
+                        const newStateStr = stateToString(newState);
+                        
+                        // 如果新状态在已访问集合中，跳过
+                        if (closedSet.has(newStateStr)) {
+                            continue;
+                        }
+                        
+                        // 计算新节点的代价
+                        const newG = current.g + 1;
+                        const newH = manhattanDistance(newState, size);
+                        const newF = newG + newH;
+                        
+                        // 检查是否已在开放集合中，如果存在且代价更高，则更新
+                        const existingIndex = openSet.findIndex(node => stateToString(node.state) === newStateStr);
+                        
+                        if (existingIndex === -1) {
+                            // 新节点，加入开放集合
+                            openSet.push({
+                                state: newState,
+                                g: newG,
+                                h: newH,
+                                f: newF,
+                                path: [...current.path, dir.move]
+                            });
+                        } else if (newG < openSet[existingIndex].g) {
+                            // 更新已有节点
+                            openSet[existingIndex].g = newG;
+                            openSet[existingIndex].f = newF;
+                            openSet[existingIndex].path = [...current.path, dir.move];
+                        }
+                    }
+                }
+                
+                stepCount++;
+                
+                // 为了防止界面冻结，偶尔让出控制权
+                if (stepCount % 100 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                    // 更新状态显示
+                    if (puzzleContainer.querySelector('.loading')) {
+                        puzzleContainer.innerHTML = `<div class="loading">正在计算最优解，已搜索 ${stepCount} 步...</div>`;
+                    }
+                }
+            }
+            
+            // 如果没有找到解，返回null
+            return null;
+        }
+
+        // 随机打乱拼图 - 限制打乱步数以确保可解性
+        function shufflePuzzle(size) {
+            // 创建目标状态（解好的状态）
+            const targetState = [];
+            for (let i = 0; i < size; i++) {
+                targetState[i] = [];
+                for (let j = 0; j < size; j++) {
+                    if (i === size - 1 && j === size - 1) {
+                        targetState[i][j] = 0; // 空格在右下角
+                    } else {
+                        targetState[i][j] = i * size + j + 1;
+                    }
+                }
+            }
+
+            // 从目标状态开始，执行较少的随机移动来打乱拼图
+            let currentState = JSON.parse(JSON.stringify(targetState));
+            let emptyRow = size - 1;
+            let emptyCol = size - 1;
+            const directions = ['N', 'S', 'E', 'W'];
+            const opposites = {'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E'};
+            
+            // 执行较少的随机移动来打乱拼图，确保在A*算法的搜索范围内
+            const moveCount = size === 3 ? 20 : 15; // 3x3打乱20步，4x4打乱15步
+            
+            for (let i = 0; i < moveCount; i++) {
+                const possibleMoves = directions.filter(dir => {
+                    if (opposites[dir] === (i > 0 ? (i > 0 ? ['N', 'S', 'E', 'W'][Math.floor(Math.random() * 4)] : null) : null)) return false; // 避免立即反向移动
+                    if (dir === 'N' && emptyRow === 0) return false;
+                    if (dir === 'S' && emptyRow === size - 1) return false;
+                    if (dir === 'W' && emptyCol === 0) return false;
+                    if (dir === 'E' && emptyCol === size - 1) return false;
+                    return true;
+                });
+
+                if (possibleMoves.length === 0) continue;
+
+                const randomDir = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                
+                // 执行移动
+                let newRow = emptyRow, newCol = emptyCol;
+                switch (randomDir) {
+                    case 'N': newRow--; break;
+                    case 'S': newRow++; break;
+                    case 'W': newCol--; break;
+                    case 'E': newCol++; break;
+                }
+
+                // 交换空格和相邻的方块
+                currentState[emptyRow][emptyCol] = currentState[newRow][newCol];
+                currentState[newRow][newCol] = 0;
+                
+                // 更新空格位置
+                emptyRow = newRow;
+                emptyCol = newCol;
+            }
+
+            return currentState;
+        }
+
+        // 生成随机拼图并计算最优解
+        async function loadRandomPuzzle() {
+            if (isCalculating) return; // 防止重复计算
+            
+            isCalculating = true;
+            
+            // 显示加载提示
+            puzzleContainer.innerHTML = '<div class="loading">正在生成随机拼图...</div>';
+            
+            try {
+                const initialRandomState = shufflePuzzle(randomPuzzleSize);
+                currentState = JSON.parse(JSON.stringify(initialRandomState));
+                currentStep = 0;
+
+                // 找到空格位置
+                for (let row = 0; row < randomPuzzleSize; row++) {
+                    for (let col = 0; col < randomPuzzleSize; col++) {
+                        if (currentState[row][col] === 0) {
+                            emptyPosition = {row, col};
+                            break;
+                        }
+                    }
+                }
+
+                // 显示状态
+                puzzleContainer.innerHTML = '<div class="loading">正在计算最优解，请稍候...</div>';
+                
+                // 使用A*算法计算最优解
+                optimalSolution = await aStar(currentState, randomPuzzleSize);
+                
+                if (optimalSolution === null) {
+                    puzzleContainer.innerHTML = '<div class="loading">无法找到解，尝试重新生成...</div>';
+                    // 如果A*算法没有找到解，重新生成一个拼图
+                    const newInitialState = shufflePuzzle(randomPuzzleSize);
+                    currentState = JSON.parse(JSON.stringify(newInitialState));
+                    optimalSolution = await aStar(currentState, randomPuzzleSize);
+                    
+                    if (optimalSolution === null) {
+                        puzzleContainer.innerHTML = '<div class="loading">多次尝试后仍无法找到解，使用简单解法...</div>';
+                        // 如果还是找不到解，使用一个简单的解法（可能不是最优的）
+                        optimalSolution = []; // 简单返回空数组
+                    }
+                }
+
+                // 更新UI
+                renderPuzzle();
+                updateMoveHistory();
+                totalStepsElement.textContent = optimalSolution ? optimalSolution.length : 0;
+                currentStepElement.textContent = currentStep;
+                
+            } catch (error) {
+                console.error('计算最优解时出错:', error);
+                puzzleContainer.innerHTML = '<div class="loading">计算过程中出错，请重试</div>';
+            } finally {
+                isCalculating = false;
+            }
+        }
+
+        // 加载拼图
+        function loadPuzzle(index) {
+            const puzzle = puzzles[index];
+            currentState = JSON.parse(JSON.stringify(puzzle.initialState));
+            currentStep = 0;
+
+            // 找到空格位置
+            for (let row = 0; row < puzzle.size; row++) {
+                for (let col = 0; col < puzzle.size; col++) {
+                    if (currentState[row][col] === 0) {
+                        emptyPosition = {row, col};
+                        break;
+                    }
+                }
+            }
+
+            // 更新UI
+            renderPuzzle();
+            updateMoveHistory();
+            totalStepsElement.textContent = puzzle.steps;
+            currentStepElement.textContent = currentStep;
+        }
+
+        // 渲染拼图
+        function renderPuzzle() {
+            const size = currentPuzzleIndex === -1 ? randomPuzzleSize : puzzles[currentPuzzleIndex].size;
+            const gridClass = size === 3 ? 'grid-3x3' : 'grid-4x4';
+
+            puzzleContainer.innerHTML = '';
+            puzzleContainer.className = `puzzle-grid ${gridClass}`;
+
+            for (let row = 0; row < size; row++) {
+                for (let col = 0; col < size; col++) {
+                    const tile = document.createElement('div');
+                    const value = currentState[row][col];
+
+                    if (value === 0) {
+                        tile.className = 'tile empty-tile';
+                        tile.textContent = '';
+                        tile.setAttribute('data-row', row);
+                        tile.setAttribute('data-col', col);
+                    } else {
+                        tile.className = 'tile';
+                        tile.textContent = value;
+                        tile.setAttribute('data-value', value);
+                        tile.setAttribute('data-row', row);
+                        tile.setAttribute('data-col', col);
+                    }
+
+                    puzzleContainer.appendChild(tile);
+                }
+            }
+        }
+
+        // 更新移动历史
+        function updateMoveHistory() {
+            moveHistoryElement.innerHTML = ''; // 清空历史记录
+
+            const moves = currentPuzzleIndex === -1 ? optimalSolution : puzzles[currentPuzzleIndex].moves;
+
+            if (!moves) {
+                moveHistoryElement.innerHTML = '<div class="move-item">未找到解法</div>';
+                return;
+            }
+
+            // 显示所有移动步骤
+            for (let i = 0; i < moves.length; i++) {
+                const moveItem = document.createElement('div');
+                moveItem.className = 'move-item';
+                if (i === currentStep) {
+                    moveItem.classList.add('current-move');
+                }
+                moveItem.textContent = `步骤 ${i + 1}: ${moves[i]}`;
+                moveItem.title = `第 ${i + 1} 步`;
+                moveHistoryElement.appendChild(moveItem);
+            }
+
+            // 滚动到当前步骤
+            const currentMoveItem = moveHistoryElement.querySelector('.current-move');
+            if (currentMoveItem) {
+                currentMoveItem.scrollIntoView({behavior: 'smooth', block: 'center'});
+            }
+        }
+
+        // 执行一步移动
+        function performMove(direction) {
+            if (isAnimating) return false;
+
+            const size = currentPuzzleIndex === -1 ? randomPuzzleSize : puzzles[currentPuzzleIndex].size;
+            const {row, col} = emptyPosition;
+            let newRow = row, newCol = col;
+
+            switch (direction) {
+                case 'N':
+                    newRow = row - 1;
+                    break;
+                case 'S':
+                    newRow = row + 1;
+                    break;
+                case 'E':
+                    newCol = col + 1;
+                    break;
+                case 'W':
+                    newCol = col - 1;
+                    break;
+            }
+
+            // 检查移动是否有效
+            if (newRow >= 0 && newRow < size && newCol >= 0 && newCol < size) {
+                // 设置动画状态
+                isAnimating = true;
+                updateControls();
+
+                // 找到要移动的拼图块
+                const movingTile = puzzleContainer.querySelector(`.tile[data-row="${newRow}"][data-col="${newCol}"]`);
+
+                if (movingTile) {
+                    // 添加移动动画
+                    movingTile.style.transition = `all ${animationSpeed}ms ease-in-out`;
+
+                    // 根据移动方向设置动画
+                    switch (direction) {
+                        case 'N':
+                            movingTile.style.transform = `translateY(${100}%)`;
+                            break;
+                        case 'S':
+                            movingTile.style.transform = `translateY(-${100}%)`;
+                            break;
+                        case 'E':
+                            movingTile.style.transform = `translateX(-${100}%)`;
+                            break;
+                        case 'W':
+                            movingTile.style.transform = `translateX(${100}%)`;
+                            break;
+                    }
+
+                    // 在动画结束后更新状态和位置
+                    setTimeout(() => {
+                        // 重置transform
+                        movingTile.style.transform = 'translateX(0) translateY(0)';
+                        movingTile.style.transition = 'none';
+
+                        // 更新数据属性
+                        movingTile.setAttribute('data-row', row);
+                        movingTile.setAttribute('data-col', col);
+
+                        // 交换空格和相邻的方块
+                        currentState[row][col] = currentState[newRow][newCol];
+                        currentState[newRow][newCol] = 0;
+                        emptyPosition = {row: newRow, col: newCol};
+
+                        // 重新渲染以更新位置
+                        renderPuzzleWithoutAnimation();
+                        updateMoveHistory();
+                        currentStepElement.textContent = currentStep;
+
+                        // 动画结束，重置状态
+                        isAnimating = false;
+                        updateControls();
+                    }, animationSpeed);
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        function renderPuzzleWithoutAnimation() {
+            const size = currentPuzzleIndex === -1 ? randomPuzzleSize : puzzles[currentPuzzleIndex].size;
+            const gridClass = size === 3 ? 'grid-3x3' : 'grid-4x4';
+
+            puzzleContainer.innerHTML = '';
+            puzzleContainer.className = `puzzle-grid ${gridClass}`;
+
+            for (let row = 0; row < size; row++) {
+                for (let col = 0; col < size; col++) {
+                    const tile = document.createElement('div');
+                    const value = currentState[row][col];
+
+                    if (value === 0) {
+                        tile.className = 'tile empty-tile';
+                        tile.textContent = '';
+                        tile.setAttribute('data-row', row.toString());
+                        tile.setAttribute('data-col', col.toString());
+                    } else {
+                        tile.className = 'tile';
+                        tile.textContent = value;
+                        tile.setAttribute('data-value', value);
+                        tile.setAttribute('data-row', row.toString());
+                        tile.setAttribute('data-col', col.toString());
+                    }
+
+                    puzzleContainer.appendChild(tile);
+                }
+            }
+        }
+
+        // 下一步
+        function nextStep() {
+            if (isAnimating) return;
+
+            const moves = currentPuzzleIndex === -1 ? optimalSolution : puzzles[currentPuzzleIndex].moves;
+            if (!moves) return;
+            
+            if (currentStep < moves.length) {
+                const direction = moves[currentStep];
+                if (performMove(direction)) {
+                    currentStep++;
+                }
+            }
+        }
+
+        // 上一步
+        function prevStep() {
+            if (isAnimating) return;
+
+            if (currentStep > 0) {
+                const moves = currentPuzzleIndex === -1 ? optimalSolution : puzzles[currentPuzzleIndex].moves;
+                if (!moves) return;
+                
+                const direction = moves[currentStep - 1];
+                let reverseDirection;
+
+                switch (direction) {
+                    case 'N':
+                        reverseDirection = 'S';
+                        break;
+                    case 'S':
+                        reverseDirection = 'N';
+                        break;
+                    case 'E':
+                        reverseDirection = 'W';
+                        break;
+                    case 'W':
+                        reverseDirection = 'E';
+                        break;
+                }
+
+                if (performMove(reverseDirection)) {
+                    currentStep--;
+                }
+            }
+        }
+
+        // 开始动画
+        function startAnimation() {
+            if (isAnimating) return;
+
+            const moves = currentPuzzleIndex === -1 ? optimalSolution : puzzles[currentPuzzleIndex].moves;
+            if (!moves) return;
+            
+            animationInterval = setInterval(() => {
+                if (currentStep < moves.length) {
+                    nextStep();
+                } else {
+                    pauseAnimation();
+                }
+            }, animationSpeed);
+
+            updateControls();
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+                animationInterval = null;
+            }
+            updateControls();
+        }
+
+        // 重置拼图
+        function resetPuzzle() {
+            pauseAnimation();
+            isAnimating = false;
+            
+            if (currentPuzzleIndex === -1) {
+                loadRandomPuzzle();
+            } else {
+                loadPuzzle(currentPuzzleIndex);
+            }
+            updateControls();
+        }
+
+        // 更新控制按钮状态
+        function updateControls() {
+            const moves = currentPuzzleIndex === -1 ? optimalSolution : puzzles[currentPuzzleIndex].moves;
+
+            // 在动画进行中禁用所有控制按钮
+            if (isAnimating) {
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                playBtn.disabled = true;
+                return;
+            }
+
+            // 更新按钮状态
+            prevBtn.disabled = currentStep === 0;
+            nextBtn.disabled = currentStep >= (moves ? moves.length : 0);
+            playBtn.disabled = !moves || currentStep >= moves.length;
+            pauseBtn.disabled = !animationInterval;
+        }
+
+        // 页面加载完成后初始化
+        window.onload = init;
+    </script>
+</body>
+</html>
+
+
+
